@@ -13,7 +13,7 @@ In this exercise, we apply the prompt strategies from **Section 3: Deciphering C
 We investigate three distinct algorithmic domains:
 1. **Algorithm 1 — Free-Form Text Parsing (`task_parser.py`):** Step-by-step regex token extraction, relative temporal resolution, and input sanitization (Prompt 1 Workflow).
 2. **Algorithm 2 — Multi-Factor Dynamic Priority Scoring (`task_priority.py`):** Deciphering weighted heuristics, status penalties, tag boosts, and ranking mechanics (Prompt 2 Workflow).
-3. **Algorithm 3 — Two-Way Synchronization & Conflict Resolution (`task_list_merge.py`):** Untangling complex control flow, Last-Write-Wins reconciliation, and domain state precedence invariants (Prompt 3 Workflow).
+3. **Algorithm 3 — Two-Way Task List Synchronization & Conflict Resolution (`task_list_merge.py`):** Untangling complex control flow, Last-Write-Wins reconciliation, and domain state precedence invariants (Prompt 3 Workflow).
 4. **Empirical Verification:** Verifying all 55 unit tests across the test suites.
 
 ---
@@ -112,10 +112,10 @@ if days_since_last_update < 1:
 
 ---
 
-## 4. Algorithm 3: Sync & Conflict Resolution (`task_list_merge.py`) — Prompt 3 Workflow
+## 4. Algorithm 3: Two-Way Task List Synchronization & Conflict Resolution (`task_list_merge.py`) — Prompt 3 Workflow
 
 ### 4.1 Code Under Investigation
-`merge_task_lists(local_tasks, remote_tasks)` and `resolve_task_conflict(local_task, remote_task)` reconcile tasks between two asynchronous storage sources (e.g. local client and remote server).
+`merge_task_lists(local_tasks, remote_tasks)` and `resolve_task_conflict(local_task, remote_task)` reconcile tasks between two asynchronous storage sources (local store and remote store).
 
 ### 4.2 Control Flow Decision Tree
 
@@ -154,7 +154,7 @@ if days_since_last_update < 1:
        merged_task.completed_at = remote_task.completed_at
        should_update_local = True
    ```
-   *Rationale:* If a task was completed on any client, that completion must never be reverted by an older or concurrent in-progress state.
+   *Rationale:* If a task was completed on either source, that completion must never be reverted by an older or concurrent in-progress state.
 2. **Field-Level Last-Write-Wins (LWW):**
    - For `title`, `description`, `priority`, and `due_date`, the version with the newer `updated_at` timestamp takes precedence.
 3. **Additive Tag Merging (CRDT Set Pattern):**
@@ -210,10 +210,28 @@ python -m unittest discover tests
 
 ## 6. Final Reflection on Algorithm Deconstruction
 
-### 6.1 Lessons from Deconstructing Complex Code
-1. **Breakdown by Responsibility:** Algorithms that seem intimidating at first (like 3-way merge conflict resolution) become simple once split into discrete rules (LWW for scalar fields, Completed-Wins for status, Set-Union for tags).
-2. **Mathematical Invariant Identification:** Analyzing `calculate_task_score` as a linear equation made it easy to predict how edge cases (like completed overdue tasks) behave.
-3. **Regex Substring Stripping Pattern:** `task_parser.py` demonstrated how to extract and consume tokens simultaneously to leave a clean entity title.
+### 6.1 Explicit Curriculum Reflection Questions
+
+#### Q1: How did AI change or deepen your understanding of these algorithms?
+- **Response:** AI enabled me to look past raw syntactic lines and view the algorithms conceptually. For example, rather than viewing `task_list_merge.py` as a tangled cluster of `if/else` statements, AI helped me map it into three clean mathematical invariants: Last-Write-Wins (LWW) for metadata, Dominance hierarchy for completion status, and Set-Union for tags.
+
+#### Q2: What remained difficult or counter-intuitive even after AI explanation?
+- **Response:** Managing temporal edge cases in `task_parser.py` (specifically weekday math with `days_ahead <= 0: days_ahead += 7`). Understanding why running a parser on a Monday targeting `#monday` intentionally schedules for the *following* Monday (7 days ahead) rather than same-day required careful boundary tracing.
+
+#### Q3: How would you explain this algorithm to another junior developer?
+- **Response:** I would explain the two-way sync algorithm using a "Shared Notebook" analogy:
+  - If a page only exists in your notebook, give a copy to your colleague.
+  - If it only exists in theirs, take a copy.
+  - If you both wrote on the same page, keep whichever title/description is newer, merge all topic tags together, and if either of you checked off "DONE", it stays DONE forever.
+
+#### Q4: How did you test your understanding against AI?
+- **Response:** I tested my comprehension by designing concrete edge-case scenarios (e.g., Scenario A, B, and C in Section 3.3 for priority scoring, and testing conflicting status vs newer timestamp in two-way merge) and comparing my calculated manual outputs against the AI's step-by-step trace and unit test assertions.
+
+#### Q5: How could these algorithms be improved or optimized in the future?
+- **Response:**
+  1. *Parser:* Replace multiple regex passes with a single-pass token lexer to avoid repetitive string manipulation.
+  2. *Sync:* Introduce cryptographic content hashing or version vectors (vector clocks) instead of relying strictly on wall-clock timestamps (`updated_at`), which are vulnerable to system clock skew.
+  3. *Scoring:* Allow custom weighting configuration rather than hardcoding static integer constants.
 
 ---
 
@@ -229,7 +247,7 @@ Repository Path: use-cases/code-algorithms/python/TaskManager
 1. DECONSTRUCTED ALGORITHMS:
    - task_parser.py: Natural language token parser with weekday temporal offset math.
    - task_priority.py: Multi-factor composite heuristic ranking algorithm.
-   - task_list_merge.py: 3-way synchronization with Last-Write-Wins and Completed-Wins rules.
+   - task_list_merge.py: Two-Way Synchronization with Last-Write-Wins and Completed-Wins rules.
 
 2. VERIFIED COMPUTATIONAL COMPLEXITIES:
    - Text Parsing: O(N) linear text scanning.
