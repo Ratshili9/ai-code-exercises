@@ -2,7 +2,7 @@
 ## Exercise: Codebase Exploration Challenge (`exercise-code-comprehension-001`)
 **Author:** Talifhani  
 **Language Selected:** Python (Python 3.11+)  
-**Repository Path:** `use-cases/code-comprehension-001/python/TaskManager`  
+**Repository Path:** `use-cases/code-algorithms/python/TaskManager`  
 
 ---
 
@@ -107,7 +107,7 @@ storage.py:save() writes updated state synchronously to tasks.json
 
 #### Key Discoveries:
 1. **Specialized Status Transition for `DONE`:** Unlike general status updates which invoke `task.update(status=new_status)`, transitioning to `DONE` triggers `task.mark_as_done()`, ensuring `completed_at` is set to the current timestamp.
-2. **Design Pattern Identified:** **Facade / Service Layer Pattern** (`TaskManager` wraps storage and model complexities from the CLI presentation layer).
+2. **Design Pattern Identified:** **Layered separation of concerns / Service-Facade pattern** (`TaskManager` wraps storage and model complexities from the CLI presentation layer).
 3. **Validation Experiments Proposed:**
    - Experiment 1: Attempt to pass an invalid status string (e.g. `"archived"`) and verify `ValueError` is caught or rejected by `TaskStatus(status_filter)`.
    - Experiment 2: Create a task with an invalid date string format (`"25-08-2026"`) and confirm it gracefully returns `None` with an error message.
@@ -227,25 +227,24 @@ python -m unittest discover tests
 
 - **Output:**
   ```text
-  ...............................
+  .......................................................
   ----------------------------------------------------------------------
-  Ran 31 tests in 0.031s
+  Ran 55 tests in 0.056s
 
   OK
   ```
-- **Test Coverage Breakdown (31 Tests):**
-  - Task Creation (default parameters, due date parsing, optional fields)
-  - Status Updates (transitioning to `DONE`, setting timestamps)
-  - Priority Handling (updating priorities, filtering by priority)
-  - Tag Operations (adding, duplicate rejection, removing)
-  - Persistence & Error Handling (handling non-existent IDs)
+- **Test Coverage Breakdown (55 Tests in `use-cases/code-algorithms/python/TaskManager`):**
+  - `test_task_manager.py` (31 tests): Task creation, status updates, priority filtering, tag operations, statistics, error handling.
+  - `test_task_list_merge.py` (10 tests): Multi-source task list reconciliation and conflict resolution.
+  - `test_task_parser.py` (8 tests): Natural language free-form parsing (`@tag`, `!priority`, `#date`).
+  - `test_task_priority.py` (6 tests): Multi-factor priority score calculation and task ranking.
 
 ---
 
 ### 5.2 3–5 Minute Codebase Presentation Notes
 
 #### Slide / Section 1: High-Level Architecture (1 Minute)
-- **Pattern:** 4-Tier Clean Architecture.
+- **Pattern:** Layered separation of concerns / Service-Facade pattern.
 - **Layers:**
   1. *Presentation (`cli.py`):* `argparse` CLI, formatting progress symbols (`[ ]`, `[>]`, `[✓]`, `!`).
   2. *Application Service (`task_manager.py`):* Facade orchestrating domain actions, parsing datetimes, and computing statistics.
@@ -274,7 +273,7 @@ python -m unittest discover tests
           EXERCISE SUBMISSION: CODEBASE EXPLORATION CHALLENGE
 ================================================================================
 Student: Talifhani
-Repository Path: use-cases/code-comprehension-001/python/TaskManager
+Repository Path: use-cases/code-algorithms/python/TaskManager
 
 1. INVESTIGATED TARGETS:
    - Part 1: Task Creation and Status Updates (cli.py, task_manager.py, models.py)
@@ -285,10 +284,10 @@ Repository Path: use-cases/code-comprehension-001/python/TaskManager
 2. VERIFIED CODEBASE FACTS:
    - Zero third-party dependencies (pure Python standard library).
    - Dynamic overdue calculation: due_date < now AND status != DONE.
-   - 31 unit tests verified and passing in tests/test_task_manager.py.
+   - 55 unit tests verified and passing across test suites.
 
 3. ARCHITECTURAL TAKEAWAYS:
-   - Clean separation of concerns across Presentation, Service, Domain, and Storage.
+   - Clean layered separation of concerns across Presentation, Service, Domain, and Storage.
    - Domain invariants are self-contained in models.py.
 ================================================================================
 ```
