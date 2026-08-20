@@ -287,7 +287,7 @@ Repository Path: use-cases/code-algorithms/python/TaskManager
    - 55 unit tests verified and passing across test suites.
 
 3. ARCHITECTURAL TAKEAWAYS:
-   - Clean layered separation of concerns across Presentation, Service, Domain, and Storage.
+   - Layered separation of concerns across Presentation, Service, Domain, and Storage.
    - Domain invariants are self-contained in models.py.
 ================================================================================
 ```
