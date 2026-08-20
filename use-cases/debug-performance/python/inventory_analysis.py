@@ -12,34 +12,38 @@ def find_product_combinations(products, target_price, price_margin=10):
     Returns:
         List of dictionaries with product pairs and their combined price
     """
+    # Optimization: Sort products by price to enable binary search windowing
+    # Time complexity reduced from O(N^3) to O(N log N + K)
+    import bisect
+
     results = []
+    sorted_products = sorted(products, key=lambda p: p['price'])
+    prices = [p['price'] for p in sorted_products]
 
-    # For each possible pair of products
-    for i in range(len(products)):
-        if i % 100 == 0:
-            print(f"Processing product {i+1} of {len(products)}")
-        for j in range(len(products)):
-            # Skip comparing a product with itself
-            if i != j:
-                product1 = products[i]
-                product2 = products[j]
+    min_target = target_price - price_margin
+    max_target = target_price + price_margin
 
-                # Calculate combined price
-                combined_price = product1['price'] + product2['price']
+    for i, product1 in enumerate(sorted_products):
+        p1_price = product1['price']
+        
+        # Binary search for valid price range for product2
+        min_p2 = min_target - p1_price
+        max_p2 = max_target - p1_price
 
-                # Check if the combined price is within the target range
-                if (target_price - price_margin) <= combined_price <= (target_price + price_margin):
-                    # Avoid duplicates like (product1, product2) and (product2, product1)
-                    if not any(r['product1']['id'] == product2['id'] and
-                               r['product2']['id'] == product1['id'] for r in results):
+        # Search only for j > i to avoid self-pairing and duplicates
+        left_idx = max(i + 1, bisect.bisect_left(prices, min_p2))
+        right_idx = bisect.bisect_right(prices, max_p2)
 
-                        pair = {
-                            'product1': product1,
-                            'product2': product2,
-                            'combined_price': combined_price,
-                            'price_difference': abs(target_price - combined_price)
-                        }
-                        results.append(pair)
+        for j in range(left_idx, right_idx):
+            product2 = sorted_products[j]
+            combined_price = p1_price + product2['price']
+            pair = {
+                'product1': product1,
+                'product2': product2,
+                'combined_price': combined_price,
+                'price_difference': abs(target_price - combined_price)
+            }
+            results.append(pair)
 
     # Sort by price difference from target
     results.sort(key=lambda x: x['price_difference'])
