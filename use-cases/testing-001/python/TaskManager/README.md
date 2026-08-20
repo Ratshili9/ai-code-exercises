@@ -70,4 +70,18 @@ python cli.py stats
 
 ### Run the Tests
 
-TODO
+Run the unit test suite using Python's built-in `unittest` framework:
+
+```bash
+# Discover and run all unit tests
+python -m unittest discover tests
+
+# Run tests with verbose reporting
+python -m unittest discover -v tests
+
+# Run a specific test module
+python -m unittest tests/test_task_manager.py
+python -m unittest tests/test_task_parser.py
+python -m unittest tests/test_task_priority.py
+python -m unittest tests/test_task_list_merge.py
+```
