@@ -1,112 +1,135 @@
 # WeThinkCode_ AI Curriculum: Using GenAI to Support Software Development
 ## Exercise: Knowing Where to Start (`exercise-code-comprehension-002`)
+**Author:** Talifhani  
 **Language Selected:** Python (Python 3.11+)  
-**Repository Location:** `use-cases/task-manager/python` / `use-cases/code-comprehension-001/python/TaskManager`  
-**Author / Contributor:** Pair Programming with Antigravity AI  
+**Repository Path:** `use-cases/code-algorithms/python/TaskManager`  
 
 ---
 
 ## 1. Setup & Context
 
-### 1.1 Scenario Overview
-You have just joined a software engineering team responsible for maintaining and extending the **Task Manager** application. The codebase is an existing, unfamiliar project without extensive architectural documentation. 
+### 1.1 Onboarding Scenario
+Imagine joining a development team responsible for maintaining the Python **Task Manager** application. The codebase is unfamiliar, and there is no senior developer available for a live walkthrough. 
 
-To onboard quickly and effectively, we apply three core AI prompt strategies:
-1. **Understanding Project Structure & Technology Stack**
-2. **Finding Feature Implementation Locations**
-3. **Understanding Domain Models and Business Concepts**
+To onboard methodically without guessing or breaking existing functionality, I use a structured 4-phase investigation workflow guided by GenAI prompt strategies:
+1. **Understand Project Structure & Tech Stack**
+2. **Locate Feature Implementation Points**
+3. **Deconstruct the Domain Model & State Lifecycle**
+4. **Plan a Practical Feature Implementation**
 
 ---
 
 ## 2. Exercise Part 1: Understanding Project Structure
 
-### 2.1 Initial Observations
-A high-level inspection of the repository reveals the following organization:
+### 2.1 My Initial Understanding (Before Deep Dive)
+On first inspecting the repository directory `use-cases/code-algorithms/python/TaskManager`:
+- **Initial Guess:** I assumed this was a basic command-line CRUD script storing tasks in a flat JSON file.
+- **Identified Files:** `cli.py`, `models.py`, `storage.py`, `task_manager.py`, `task_parser.py`, `task_priority.py`, `task_list_merge.py`, `README.md`, and `tests/`.
+- **Technologies Observed:** Pure standard-library Python (no `requirements.txt` or third-party packages).
+
+### 2.2 What I Investigated
+I inspected configuration files and directory layout, then ran the test suite:
+- Executed: `python -m unittest discover tests`
+- **Result:** **55 unit tests** executed and passed across 4 test suites:
+  - `test_task_manager.py` (31 tests)
+  - `test_task_list_merge.py` (10 tests)
+  - `test_task_parser.py` (8 tests)
+  - `test_task_priority.py` (6 tests)
+
+### 2.3 Prompt Applied to AI
+> *"I'm a junior developer who just joined this project. I've read the README but still need help understanding the project structure and technology stack.*  
+> *Here's my current understanding: It seems to be a CLI task manager in Python with local JSON storage, divided into models, storage, task_manager, and CLI.*  
+> *Project structure: `models.py`, `storage.py`, `task_manager.py`, `cli.py`, `task_parser.py`, `task_priority.py`, `task_list_merge.py`, `tests/`.*  
+> *Could you: 1. Validate my understanding; 2. Explain what each main file contains and its architectural responsibility; 3. Point out entry points; 4. Suggest questions for the team?"*
+
+### 2.4 Discoveries & Mental Model Evolution
+The AI validated my observation while revealing a sophisticated **layered architecture**:
 
 ```text
-TaskManager/
-├── models.py         # Domain models and entity definitions (Task, TaskPriority, TaskStatus)
-├── storage.py        # Persistence layer with custom JSON encoder/decoder
-├── task_manager.py   # Application service layer managing business operations
-├── cli.py            # Command Line Interface (CLI) entry point using argparse
-├── README.md         # Usage, installation, and CLI command documentation
-└── tests/
-    ├── __init__.py
-    └── test_task_manager.py  # 31 unit tests covering core operations
+┌─────────────────────────────────────────────────────────────┐
+│                    Presentation Layer                       │
+│       cli.py (argparse CLI, formatted terminal output)       │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ calls
+┌──────────────────────────────▼──────────────────────────────┐
+│                    Application / Service Layer              │
+│       task_manager.py (Facade orchestrator, stats)           │
+│   Helper modules: task_parser.py (NLP token regex),          │
+│   task_priority.py (Scoring), task_list_merge.py (Conflict) │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ uses
+┌──────────────────────────────▼──────────────────────────────┐
+│                 Domain Entity & Persistence Layer           │
+│   models.py (Task, TaskPriority, TaskStatus, business rules)│
+│   storage.py (TaskStorage, JSON TaskEncoder / TaskDecoder)  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Technology Stack & Dependencies
-- **Core Language:** Python 3.11+
-- **External Dependencies:** Zero (100% standard library: `argparse`, `datetime`, `enum`, `uuid`, `json`, `unittest`).
-- **Data Store:** File-based JSON persistence (`tasks.json`).
-- **Testing Framework:** Built-in `unittest`.
+#### Key Discoveries:
+1. **`models.py`**: Defines pure domain entities (`Task`), enums (`TaskPriority`, `TaskStatus`), and encapsulates business queries (`is_overdue()`, `mark_as_done()`).
+2. **`storage.py`**: Handles persistence using custom `json.JSONEncoder` and `json.JSONDecoder` hooks to seamlessly serialize/deserialize ISO-formatted datetime timestamps and enum values.
+3. **`task_manager.py`**: Serves as the application service facade coordinating storage and business operations.
+4. **`task_parser.py` / `task_priority.py` / `task_list_merge.py`**: Specialized algorithmic utilities providing natural language parsing (`@tag`, `!priority`, `#date`), multi-criteria priority scoring, and three-way list reconciliation with conflict resolution.
+5. **`cli.py`**: Presentation layer parsing terminal commands (`create`, `list`, `status`, `due`, `tag`, `stats`) and formatting ASCII progress indicators (`[ ]`, `[✓]`, `!`, `!!`).
 
-### 2.3 Architectural Pattern: Layered (Separation of Concerns)
-The application follows a clean 4-layer architecture:
-1. **Presentation Layer (`cli.py`):** Parses user CLI flags/commands via `argparse`, formats display output (`[ ]`, `[✓]`, `!`, `!!`), and delegates execution to `TaskManager`.
-2. **Application / Service Layer (`task_manager.py`):** Acts as the orchestrator/facade. It handles parameter parsing (e.g., date strings to `datetime`), queries storage, updates entities, and aggregates statistics.
-3. **Domain Entity Layer (`models.py`):** Encapsulates core entities (`Task`), enumerations (`TaskPriority`, `TaskStatus`), and state transitions/queries (`mark_as_done()`, `is_overdue()`).
-4. **Data Access / Persistence Layer (`storage.py`):** Manages file I/O against `tasks.json` with dedicated `TaskEncoder` and `TaskDecoder` classes handling ISO 8601 string conversions for `datetime`.
-
-### 2.4 Questions for the Team
-1. *Is file-based JSON storage intended for single-user local CLI use, or are there plans to support SQLite/PostgreSQL for concurrent access?*
-2. *How are timezones intended to be handled (currently using naive local `datetime.now()`)?*
-3. *Are there specific conventions for error reporting to the CLI user (e.g., exit codes vs. return status booleans)?*
+### 2.5 Questions to Ask the Team
+1. *Is the JSON storage intended strictly for single-user local CLI usage, or are we planning a concurrent database backend (e.g., SQLite/Postgres)?*
+2. *Should datetimes be standardized to UTC with timezone awareness instead of system local time (`datetime.now()`)?*
+3. *Are there specific CLI exit code conventions (e.g. `sys.exit(1)` on error) we should enforce?*
 
 ---
 
 ## 3. Exercise Part 2: Finding Feature Implementation
 
 ### 3.1 Scenario: Adding "Task Export to CSV"
-The team lead has requested a new feature: **Task Export to CSV**. Before writing code, we locate where similar features live and map out the required integration points.
+The team lead has requested adding a **Task Export to CSV** feature.
 
-### 3.2 Search Strategy & Findings
-- **Search Keywords:** `storage`, `save`, `load`, `json`, `export`, `list_tasks`, `format_task`
-- **Observations:**
-  - File writing is currently encapsulated inside `TaskStorage.save()` in `storage.py`.
-  - Display formatting (converting tasks to structured text) is located in `cli.py:format_task()`.
-  - Application logic coordinates retrieval via `TaskManager.list_tasks()`.
+### 3.2 My Initial Search & Hypothesis
+- **Search terms used:** `storage`, `save`, `json`, `format`, `export`, `list_tasks`.
+- **Initial Hypothesis:** I thought about adding a `.to_csv()` method directly to `Task` in `models.py` or writing raw file output inside `cli.py`.
 
-### 3.3 Implementation Blueprint for CSV Export
-To maintain separation of concerns without polluting JSON storage logic:
+### 3.3 Prompt Applied to AI
+> *"I need to work on adding a 'Task Export to CSV' feature in this codebase. I see JSON persistence in `storage.py` and display formatting in `cli.py`. Where should CSV export functionality live, how should components interact, and how do I avoid violating separation of concerns?"*
 
-1. **New Exporter Utility / Method in `storage.py` or `exporters.py`:**
+### 3.4 Findings & Feature Implementation Plan
+The AI helped me realize that putting CSV export into `models.py` violates single responsibility (models should not know about file serialization formats), and putting file operations in `cli.py` couples presentation with data export.
+
+#### Clear Implementation Plan:
+1. **Data Access / Exporter Layer (`storage.py` or dedicated `exporters.py`):**
+   Implement `export_tasks_to_csv(tasks, filepath)` using Python's standard `csv.DictWriter`:
    ```python
    import csv
 
-   def export_tasks_to_csv(tasks, output_filepath="tasks_export.csv"):
-       fieldnames = [
-           "id", "title", "description", "priority", "status",
-           "created_at", "updated_at", "due_date", "completed_at", "tags"
-       ]
-       with open(output_filepath, mode="w", newline="", encoding="utf-8") as f:
-           writer = csv.DictWriter(f, fieldnames=fieldnames)
+   def export_tasks_to_csv(tasks, filepath="tasks_export.csv"):
+       fields = ["id", "title", "description", "priority", "status", "created_at", "due_date", "completed_at", "tags"]
+       with open(filepath, "w", newline="", encoding="utf-8") as f:
+           writer = csv.DictWriter(f, fieldnames=fields)
            writer.writeheader()
-           for task in tasks:
+           for t in tasks:
                writer.writerow({
-                   "id": task.id,
-                   "title": task.title,
-                   "description": task.description,
-                   "priority": task.priority.name,
-                   "status": task.status.value,
-                   "created_at": task.created_at.isoformat() if task.created_at else "",
-                   "updated_at": task.updated_at.isoformat() if task.updated_at else "",
-                   "due_date": task.due_date.isoformat() if task.due_date else "",
-                   "completed_at": task.completed_at.isoformat() if task.completed_at else "",
-                   "tags": ";".join(task.tags)
+                   "id": t.id,
+                   "title": t.title,
+                   "description": t.description,
+                   "priority": t.priority.name,
+                   "status": t.status.value,
+                   "created_at": t.created_at.isoformat() if t.created_at else "",
+                   "due_date": t.due_date.isoformat() if t.due_date else "",
+                   "completed_at": t.completed_at.isoformat() if t.completed_at else "",
+                   "tags": ";".join(t.tags)
                })
-       return output_filepath
+       return filepath
    ```
-2. **Service Layer (`task_manager.py`):**
-   Add `export_tasks(self, output_path="tasks.csv", status_filter=None, priority_filter=None)`.
-3. **CLI Layer (`cli.py`):**
-   Add `export` parser subcommand: `python cli.py export --output tasks.csv`.
+2. **Service Facade (`task_manager.py`):**
+   Expose `export_tasks(self, filepath, status_filter=None, priority_filter=None)`.
+3. **Presentation Layer (`cli.py`):**
+   Add an `export` CLI subcommand: `python cli.py export --file tasks.csv`.
 
 ---
 
 ## 4. Exercise Part 3: Understanding the Domain Model
 
-### 4.1 Core Domain Entities & Attributes
+### 4.1 Extracting the Domain Model
+- **Entities & Enums:** `Task`, `TaskPriority` (1=LOW, 2=MEDIUM, 3=HIGH, 4=URGENT), `TaskStatus` (`todo`, `in_progress`, `review`, `done`).
 
 ```mermaid
 classDiagram
@@ -146,87 +169,71 @@ classDiagram
     Task *-- TaskStatus
 ```
 
-### 4.2 Task Lifecycle & State Transitions
+### 4.2 State Transitions & Lifecycle
 
 ```mermaid
 stateDiagram-v2
-    [*] --> TODO: Task Created
-    TODO --> IN_PROGRESS: Start Work
-    IN_PROGRESS --> REVIEW: Code/Task Review
-    REVIEW --> IN_PROGRESS: Changes Requested
-    TODO --> DONE: mark_as_done()
-    IN_PROGRESS --> DONE: mark_as_done()
-    REVIEW --> DONE: mark_as_done()
+    [*] --> TODO: Create Task
+    TODO --> IN_PROGRESS: Begin Work
+    IN_PROGRESS --> REVIEW: Submit for Review
+    REVIEW --> IN_PROGRESS: Request Changes
+    TODO --> DONE: Complete Task
+    IN_PROGRESS --> DONE: Complete Task
+    REVIEW --> DONE: Approve & Complete
     DONE --> [*]
 ```
 
 ### 4.3 Domain Glossary
-| Term | Definition in Task Manager Codebase |
-| :--- | :--- |
-| **Task** | The fundamental business entity representing a unit of work, uniquely identified by a UUID string. |
-| **TaskPriority** | Numerical enum from 1 to 4 (`LOW`, `MEDIUM`, `HIGH`, `URGENT`). Used for filtering and visual rendering (`!`, `!!`, `!!!`, `!!!!`). |
-| **TaskStatus** | String enum (`todo`, `in_progress`, `review`, `done`) tracking execution lifecycle. |
-| **Overdue** | Business rule defined as: `due_date < datetime.now() and status != TaskStatus.DONE`. Tasks with no due date or already marked `DONE` are never overdue. |
-| **Tags** | List of arbitrary strings associated with a task for categorization. |
+- **Task**: The fundamental entity representing a single work item, uniquely tracked via UUIDv4.
+- **Priority Level**: Weighted urgency represented as an integer (1 to 4) and rendered in terminal output as exclamation marks (`!`, `!!`, `!!!`, `!!!!`).
+- **Overdue Invariant**: Evaluated dynamically as `due_date < datetime.now() and status != TaskStatus.DONE`. Tasks without a due date or in `DONE` status are never overdue.
+- **Tags**: Arbitrary string labels used for contextual grouping (`@work`, `@urgent`).
 
-### 4.4 Self-Assessment Domain Questions & Answers
-- **Q1: Can a task in `REVIEW` status be considered overdue?**  
-  *Answer:* Yes. `is_overdue()` evaluates `due_date < datetime.now() and self.status != TaskStatus.DONE`. Any status other than `DONE` is overdue once the deadline passes.
-- **Q2: What happens to `completed_at` if a task is updated back to `IN_PROGRESS` after being `DONE`?**  
-  *Answer:* Currently, `update(status=TaskStatus.IN_PROGRESS)` will update `updated_at`, but `completed_at` remains populated with the old timestamp unless explicitly reset. This is an edge-case bug to flag for improvement.
-- **Q3: How are task priorities sorted or compared?**  
-  *Answer:* `TaskPriority` values are integers (1-4). Higher integer values represent higher urgency.
+### 4.4 Self-Assessment Questions & Answers
+- **Q1: Can a task in `REVIEW` status be overdue?**  
+  *Answer:* Yes. `is_overdue()` returns `True` for any status other than `DONE` if the due date has passed.
+- **Q2: What happens if a completed task is moved back to `IN_PROGRESS`?**  
+  *Answer:* `update(status=TaskStatus.IN_PROGRESS)` updates `updated_at`, but `completed_at` retains its old timestamp. A domain invariant fix is needed to clear `completed_at` if reopened.
 
 ---
 
 ## 5. Exercise Part 4: Practical Application
 
 ### 5.1 Business Rule Requirement
-> **Requirement:** *"Tasks that are overdue for more than 7 days should be automatically marked as abandoned unless they are marked as high priority (HIGH or URGENT)."*
+> *"Tasks that are overdue for more than 7 days should be automatically marked as abandoned unless they are marked as high priority (HIGH or URGENT)."*
 
-### 5.2 Technical Design & Implementation Steps
+### 5.2 Implementation Blueprint
 
-#### 1. Update `models.py`
-Add `ABANDONED` to `TaskStatus` enum and helper methods:
+#### 1. Modify `models.py`
+Add `ABANDONED = "abandoned"` to `TaskStatus` and add domain methods:
 ```python
 class TaskStatus(Enum):
     TODO = "todo"
     IN_PROGRESS = "in_progress"
     REVIEW = "review"
     DONE = "done"
-    ABANDONED = "abandoned"  # New status
-```
+    ABANDONED = "abandoned"
 
-Add business logic method on `Task`:
-```python
+# In Task class:
 def is_abandonable(self, days_threshold=7):
-    """
-    A task is abandonable if it is overdue for more than `days_threshold` days
-    and priority is NOT HIGH or URGENT.
-    """
-    if self.status in (TaskStatus.DONE, TaskStatus.ABANDONED):
+    """Returns True if overdue > days_threshold and priority is not HIGH/URGENT."""
+    if self.status in (TaskStatus.DONE, TaskStatus.ABANDONED) or not self.due_date:
         return False
-    if not self.due_date:
+    if self.priority in (TaskPriority.HIGH, TaskPriority.URGENT):
         return False
-    
-    # Check if priority protects it from abandonment
-    is_high_priority = self.priority in (TaskPriority.HIGH, TaskPriority.URGENT)
-    if is_high_priority:
-        return False
-        
-    cutoff_date = datetime.now() - timedelta(days=days_threshold)
-    return self.due_date < cutoff_date
+    cutoff = datetime.now() - timedelta(days=days_threshold)
+    return self.due_date < cutoff
 
 def mark_as_abandoned(self):
     self.status = TaskStatus.ABANDONED
     self.updated_at = datetime.now()
 ```
 
-#### 2. Update `task_manager.py`
-Add management orchestration:
+#### 2. Modify `task_manager.py`
+Add batch processing logic:
 ```python
 def process_abandoned_tasks(self, days_threshold=7):
-    """Scans all tasks and marks overdue non-high-priority tasks as abandoned."""
+    """Scans and marks overdue non-high-priority tasks as abandoned."""
     tasks = self.storage.get_all_tasks()
     abandoned_count = 0
     for task in tasks:
@@ -238,56 +245,57 @@ def process_abandoned_tasks(self, days_threshold=7):
     return abandoned_count
 ```
 
-#### 3. Update `cli.py`
-- Add symbol representation: `TaskStatus.ABANDONED: "[X]"`
-- Add CLI choice in choices list: `choices=["todo", "in_progress", "review", "done", "abandoned"]`
-- Add command or automatic check: `python cli.py clean-abandoned`
+#### 3. Modify `cli.py`
+- Add status symbol `TaskStatus.ABANDONED: "[X]"`.
+- Include `"abandoned"` in the `--status` choices.
+- Add a maintenance command: `python cli.py clean-abandoned`.
 
 ---
 
-## 6. Final Discussion and Reflection
+## 6. Final Discussion & Reflection
 
-### 6.1 Effectiveness of AI Prompt Strategies
-1. **Understanding Project Structure Prompt:** Enabled instantaneous mapping of the 4-layer architecture without getting lost in implementation minutiae.
-2. **Feature Implementation Location Prompt:** Clearly separated display concerns (`cli.py`), business orchestration (`task_manager.py`), and storage serialization (`storage.py`).
-3. **Domain Model Prompt:** Uncovered implicit business invariants (e.g., overdue evaluation rule) and highlighted edge cases like `completed_at` retention during status changes.
+### 6.1 Reflection on the AI Prompts
+- **Project Structure Prompt:** Prevented cognitive overload by immediately establishing the 4 architectural layers.
+- **Feature Location Prompt:** Prevented misplaced code (e.g. putting file I/O in the CLI or Domain layers).
+- **Domain Model Prompt:** Uncovered edge cases like `completed_at` persistence and priority weighting rules.
 
-### 6.2 Strategies for Unfamiliar Codebases
-1. **Trace from Entry Point to Data Layer:** Follow a single command (e.g., `create`) from CLI parsing through business validation to disk write.
-2. **Map Domain Entities First:** Identify core state objects and their transition methods before inspecting glue code.
-3. **Verify with Existing Tests:** Run the test suite (`python -m unittest discover tests`) to confirm baseline behavior before drafting changes.
+### 6.2 Key Takeaways for Exploring Unfamiliar Codebases
+1. **Always verify tests first:** Running `python -m unittest discover tests` immediately verified baseline system health (55 passing tests).
+2. **Separate business logic from plumbing:** Identify what is core domain state versus persistence/CLI transport.
+3. **Ask targeted, contextual questions:** Providing directory trees and file snippets to AI yields significantly more accurate architectural guidance than generic questions.
 
 ---
 
-## 7. Submission Summary Document
+## 7. Submission Summary
 
 ```text
 ================================================================================
                     EXERCISE SUBMISSION: KNOWING WHERE TO START
 ================================================================================
+Student: Talifhani
+Repository Path: use-cases/code-algorithms/python/TaskManager
+
 1. INITIAL VS. FINAL UNDERSTANDING:
-   - Initial: Seemed like a basic script-based task manager with JSON files.
-   - Final: Clean 4-tier layered architecture (Presentation, Service Orchestrator,
-     Domain Model, Data Access with custom (de)serialization). High test coverage
-     (31 tests) with well-encapsulated entity methods.
+   - Initial: Assumed a simple monolithic CLI tool with basic JSON file saving.
+   - Final: Clean layered architecture separating CLI presentation, Service facade,
+     Domain invariants, and JSON storage with custom codec hooks. Accompanied by
+     specialized NLP parsing, priority scoring, and merge conflict resolution
+     supported by 55 unit tests.
 
-2. MOST VALUABLE INSIGHTS FROM PROMPTS:
-   - Prompt 1 (Structure): Clarified that no third-party dependencies are needed,
-     allowing standard library distribution.
-   - Prompt 2 (Feature Location): Showed where serialization responsibilities lie
-     versus display formatting, making CSV export a natural extension.
-   - Prompt 3 (Domain Model): Clarified how 'is_overdue' interacts with status and
-     prevented incorrect assumptions about priority rankings.
+2. INSIGHTS FROM AI PROMPTS:
+   - Structure Prompt: Clarified layer boundaries and zero external dependencies.
+   - Feature Location: Isolated data export to the persistence/utility layer rather
+     than polluting domain entities or presentation scripts.
+   - Domain Model Prompt: Clarified status lifecycle and overdue calculation rules.
 
-3. APPROACH TO NEW BUSINESS RULE (Auto-Abandon Overdue Tasks):
-   - Extend TaskStatus enum with ABANDONED.
-   - Encapsulate abandonment criteria inside Task.is_abandonable(7).
-   - Exempt HIGH and URGENT priorities.
-   - Provide a clean batch processor on TaskManager and support in CLI & tests.
+3. APPROACH TO BUSINESS RULE (Auto-Abandon Overdue Tasks):
+   - Added ABANDONED to TaskStatus enum.
+   - Encapsulated is_abandonable(7) in Task domain entity to protect HIGH/URGENT tasks.
+   - Added batch processor on TaskManager and updated CLI/tests.
 
-4. FUTURE STRATEGIES FOR UNFAMILIAR CODE:
-   - Always map the domain model & state lifecycle before touching logic.
-   - Ask targeted AI questions regarding edge cases & concurrency assumptions.
-   - Use test suites as living documentation of system behavior.
+4. FUTURE STRATEGIES:
+   - Run tests first to establish ground truth.
+   - Trace control flow from entry point down to persistence before making changes.
+   - Use structured prompts with specific code snippets for AI pair programming.
 ================================================================================
 ```
