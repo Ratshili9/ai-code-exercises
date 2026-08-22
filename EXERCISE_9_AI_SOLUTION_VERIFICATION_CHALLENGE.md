@@ -1,9 +1,9 @@
 # WeThinkCode_ AI Curriculum: Using GenAI to Support Software Development
 ## Exercise: AI Solution Verification Challenge (`exercise-debug-limitations`)
 **Author:** Talifhani  
-**Language Selected:** Python (with JavaScript starter verification)  
-**Repository Path:** `use-cases/debug-limitations/python` & `use-cases/debug-limitations/javascript`  
-**Target Code Module:** `merge_sort.py` / `merge_sort.js`  
+**Language Selected:** Python (Python 3.11+)  
+**Repository Path:** `use-cases/debug-limitations/python`  
+**Target Code Module:** `merge_sort.py`  
 
 ---
 
